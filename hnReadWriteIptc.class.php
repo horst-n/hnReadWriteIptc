@@ -1,10 +1,8 @@
-<?php
-
 /**
 * Class that helps with reading / writing IPTC data from / into JPEG image files
 *
-* @date 2021-06-18
-* @version  0.1.0
+* @date 2021-06-19
+* @version  0.1.1
 */
 class hnReadWriteIptc {
 
@@ -42,9 +40,11 @@ class hnReadWriteIptc {
      */
     protected $iptcRaw = null;
 
+
     public function __construct($filename) {
         $this->readImagefile($filename);
     }
+
 
     public function readTag($key) {
         if(!isset($this->iptcRaw[$this->tagname])) return null;
@@ -53,6 +53,7 @@ class hnReadWriteIptc {
         return $data[$key];
     }
 
+
     public function writeTag($key, $value) {
         $newData = [$key => $value];
         $oldData = isset($this->iptcRaw[$this->tagname]) && is_array($this->iptcRaw[$this->tagname]) && isset($this->iptcRaw[$this->tagname][0]) && is_string($this->iptcRaw[$this->tagname][0]) && 0 < strlen($this->iptcRaw[$this->tagname][0]) ? unserialize($this->iptcRaw[$this->tagname][0]) : [];
@@ -60,16 +61,23 @@ class hnReadWriteIptc {
         $this->iptcRaw[$this->tagname][0] = $data;
     }
 
+
     public function readImagefile($filename) {
+        if(!is_readable($filename)) {
+            return false;
+        }
         $this->filename = $filename;
         $imageInspector = new ImageInspector($this->filename);
         $inspectionResult = $imageInspector->inspect($this->filename, true);
         $this->iptcRaw = is_array($inspectionResult['iptcRaw']) ? $inspectionResult['iptcRaw'] : [];
     }
 
+
     public function writeIptcIntoFile($filename = null, $iptcRaw = null) {
-        if(null === $filename) $filename = $this->filename;
         if(null === $iptcRaw) $iptcRaw = $this->iptcRaw;
+        if(null === $filename) $filename = $this->filename;
+        if(!is_writeable($filename)) return false;
+
         $content = iptcembed($this->iptcPrepareData($iptcRaw, true), $filename);
         if($content !== false) {
             $dest = $filename . '.tmp';
@@ -87,6 +95,7 @@ class hnReadWriteIptc {
         }
         return true;
     }
+
 
     protected function iptcPrepareData($iptcRaw, $includeCustomTags = false) {
         $customTags = array('213', '214', '215', '216', '217');
@@ -120,4 +129,5 @@ class hnReadWriteIptc {
             $val;
         }
     }
+
 }
